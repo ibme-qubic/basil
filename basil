@@ -426,7 +426,7 @@ if [ ! -z $infert1 ]; then
 #setup spatial priors ready
     if [ ! -z $t1im ]; then
     # use image prior for T1t - NB ONLY works if spatial VB is being used
-	extras=$extras" --PSP_byname$spriors=t1 --PSP_byname$spriors_type=I --PSP_byname$spriors_image=$t1im"
+	extras=$extras" --PSP_byname${spriors}=t1 --PSP_byname${spriors}_type=I --PSP_byname${spriors}_image=$t1im"
 	spriors=`expr $spriors + 1`
     fi
 fi
