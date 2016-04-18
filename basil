@@ -303,6 +303,14 @@ if [ -z $fixbat ]; then
 	allinstruct=$allinstruct" --inferbat"
 fi
 
+#T1 image
+    if [ ! -z $t1im ]; then
+    # use image prior for T1t - NB this should work even for normal VB (but also sets it up as a spatial prior for the spatial VB mode if used)
+	extras=$extras" --PSP_byname${spriors}=t1 --PSP_byname${spriors}_type=I --PSP_byname${spriors}_image=$t1im"
+	spriors=`expr $spriors + 1`
+    fi
+fi
+
 ### --- TISSUE MODULE ---
 if [ ! -z $infertiss ]; then
     paramtext=" Tissue "
@@ -422,14 +430,6 @@ if [ ! -z $infert1 ]; then
 	stepfrom=$step
 	step=`expr $step + 1`
     fi
-
-#setup spatial priors ready
-    if [ ! -z $t1im ]; then
-    # use image prior for T1t - NB ONLY works if spatial VB is being used
-	extras=$extras" --PSP_byname${spriors}=t1 --PSP_byname${spriors}_type=I --PSP_byname${spriors}_image=$t1im"
-	spriors=`expr $spriors + 1`
-    fi
-fi
 
 ### --- PV CORRECTION MODULE ---
 if [ ! -z $pvcorr ]; then
