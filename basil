@@ -438,7 +438,7 @@ if [ ! -z $pvcorr ]; then
     spriors=`expr $spriors + 1`
 
     #initialisaiton for PV correction - ONLY if we have something to init from (either step greater than 1 or initmvn set)
-    if [ $step -gt 1 ] || [ ! -z $init ]; then
+    if [ ! -z $stepfrom ]; then
 	# set the inital GM amd WM values using a simple PV correction
 	wmcbfratio=0.4
 	# modified pvgm map
