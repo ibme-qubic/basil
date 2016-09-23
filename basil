@@ -60,6 +60,25 @@ call_fabber() {
 
 }
 
+do_step() {
+    # Do a VB step here using fabber
+    if [ ! -z $stepfrom ]; then
+	# if a step has already been done use the result from that as initialisaiton for this step
+	text=$text" - init with STEP $stepfrom"
+	echo $text
+	call_fabber --continue-from-mvn=$outdir/temp
+	echo $text > $outdir/step$step/info.txt
+    else
+	# this is the first step - we cannot init from a previous step
+	echo $text
+	call_fabber
+	echo $text  > $outdir/step$step/info.txt
+    fi
+    stepfrom=$step
+    step=`expr $step + 1`
+    
+}
+
 # deal with options
 
 if [ -z $1 ]; then
@@ -98,6 +117,8 @@ until [ -z $1 ]; do
 	--inferpc) inferpc=1;;
 	--artonly) artonly=1;; # remove the tissue component and only do arterial contribution
 	--spatial) spatial=1;;
+	--init) initmvn=$argument #option to input an MVN from a previous run of BASIL - parameters MUST be compatible (we do not check this!)
+	    takeargs=1;;
 #	--fast) fast=1;;
 	--fast) fastlvl=$argument
 	    takeargs=1;;
@@ -171,6 +192,7 @@ echo "$*" > $outdir/logfile
 if [ -z $fastlvl ]; then
     fastlvl=0;
 fi
+fast=""
 
 spnbiter=10;
 case $fastlvl in
@@ -295,7 +317,16 @@ allinstruct=$allinstruct" --exch=$exch" # this will include the residue function
 echo "Compartment exchange model option is : $exch" >> $outdir/logfile
 
 step=1
+stepfrom="" #default is to have this empty as no previous step has run
 spriors=1; # keep track of the number of spatial priors specified by name
+
+if [ ! -z $initmvn ]; then
+    # we are being supplied with an initial MVN
+    stepfrom=0 # this will indicate that we have something to start from (i.e. step1 will be initialised by 'step 0')
+    echo "Initial MVN being loaded $initmvn" >> $outdir/logfile
+    ${FSLDIR}/bin/imcp $initmvn $outdir/temp
+fi
+    
 
 ### BAT inference
 # this happens outside of the specification of the individual components
@@ -317,16 +348,10 @@ if [ ! -z $infertiss ]; then
     allinstruct=$allinstruct" --infertiss"
     text="STEP $step: VB - $paramtext"
     if [ -z $fast ]; then
-
-        # STEP: VB 
-	echo $text$stepfromtext
-	call_fabber
-	echo $text$stepfromtext  > $outdir/step$step/info.txt
-	
-	stepfrom=$step
-	step=`expr $step + 1`
+	echo "here"
+	do_step
     fi
-# setup spatial priors ready
+    # setup spatial priors ready
     spvbinstruct=$spvbinstruct" --PSP_byname${spriors}=ftiss --PSP_byname${spriors}_type=$stype"
     spriors=`expr $spriors + 1`
 fi
@@ -340,22 +365,7 @@ if [ ! -z $inferart ]; then
     text="STEP $step: VB - $paramtext"
 
     if [ -z $fast ]; then
-
-	if [ $step -gt 1 ]; then
-         # STEP: VB 
-	    text=$text" - init with STEP $stepfrom"
-	    echo $text
-	    call_fabber --continue-from-mvn=$outdir/temp
-	    echo $text  > $outdir/step$step/info.txt
-	else
-	    # this is the first step (i.e. no tissue component)
-	    # STEP: VB
-	    echo $text
-	    call_fabber
-	    echo $text  > $outdir/step$step/info.txt
-	fi
-	    stepfrom=$step
-	    step=`expr $step + 1`
+	do_step
     fi
 
 # setup spatial priors ready
@@ -371,13 +381,7 @@ if [ ! -z $infertau ]; then
     text="STEP $step: VB - $paramtext"
 
     if [ -z $fast ]; then
-	text=$text" - init with STEP $stepfrom"
-	echo $text
-	call_fabber --continue-from-mvn=$outdir/temp
-	echo $text > $outdir/step$step/info.txt
-
-	stepfrom=$step
-	step=`expr $step + 1`
+	do_step
     fi
 fi
 
@@ -403,13 +407,7 @@ if [ ! -z $dothis ]; then
     text="STEP $step: VB - $paramtext"	
 
     if [ -z $fast ]; then
-	text=$text" - init with STEP $stepfrom"
-	echo $text
-	call_fabber --continue-from-mvn=$outdir/temp
-	echo $text > $outdir/step$step/info.txt
-
-	stepfrom=$step
-	step=`expr $step + 1`
+	do_step
     fi
 fi
 
@@ -421,14 +419,7 @@ if [ ! -z $infert1 ]; then
     text="STEP $step: VB - $paramtext"
 
     if [ -z $fast ]; then
-	text=$text" - init with STEP $stepfrom"
-	echo $text
-
-	call_fabber --continue-from-mvn=$outdir/temp
-	echo $text > $outdir/step$step/info.txt
-	
-	stepfrom=$step
-	step=`expr $step + 1`
+	do_step
     fi
 fi
 
@@ -445,6 +436,24 @@ if [ ! -z $pvcorr ]; then
     spriors=`expr $spriors + 1`
     extras=$extras" --PSP_byname${spriors}=fwm --PSP_byname${spriors}_type=M"
     spriors=`expr $spriors + 1`
+
+    #initialisaiton for PV correction - ONLY if we have something to init from (either step greater than 1 or initmvn set)
+    if [ $step -gt 1 ] || [ ! -z $init ]; then
+	# set the inital GM amd WM values using a simple PV correction
+	wmcbfratio=0.4
+	# modified pvgm map
+	${FSLDIR}/bin/fslmaths $pgm -sub 0.2 -thr 0 -add 0.2 $outdir/temp_pgm
+	# first part of correction psuedo WM CBF term
+	# extract the initial ftiss image
+	$mvntool --input=$outdir/temp --output=$outdir/temp_ftiss --mask=$mask --param=ftiss --param-list=$outdir/step$stepfrom/paramnames.txt --val
+	${FSLDIR}/bin/fslmaths $outdir/temp_ftiss -mul $wmcbfratio -mul $pwm $outdir/wmcbfterm
+	# the rest
+	${FSLDIR}/bin/fslmaths $outdir/temp_ftiss -sub $outdir/wmcbfterm -div $outdir/temp_pgm $outdir/gmcbf_init
+	${FSLDIR}/bin/fslmaths $outdir/gmcbf_init -mul $wmcbfratio $outdir/wmcbf_init
+	# load these into the MVN, GM cbf is always param 1
+	$mvntool --input=$outdir/temp --output=$outdir/temp --mask=$mask --param=ftiss --param-list=$outdir/step$stepfrom/paramnames.txt --write --valim=$outdir/gmcbf_init --var=0.1
+	$mvntool --input=$outdir/temp --output=$outdir/temp --mask=$mask --param=fwm --param-list=$outdir/step$stepfrom/paramnames.txt --write --valim=$outdir/wmcbf_init --var=0.1
+    fi
 fi
 
 
@@ -453,39 +462,16 @@ if [ ! -z $spatial ]; then
     text="STEP $step: Spatial VB $paramtext"
     spvbinstruct=$spvbinstruct" --max-iterations=$spnbiter"
     vbinstruct=$spvbinstruct
-
+  
     if [ -z $fast ]; then
-        # STEP: Spatial VB as final stage
-	text=$text" - init with STEP $stepfrom"
-	echo $text
-
-	if [ ! -z $pvcorr ]; then
-            # set the inital GM amd WM values using a simple PV correction
-	    wmcbfratio=0.4
-	    # modified pvgm map
-	    fslmaths $pgm -sub 0.2 -thr 0 -add 0.2 $outdir/temp_pgm
-	    # first part of correction psuedo WM CBF term
-	    fslmaths $outdir/step${stepfrom}/mean_ftiss -mul $wmcbfratio -mul $pwm $outdir/wmcbfterm
-	    # the rest
-	    fslmaths $outdir/step${stepfrom}/mean_ftiss -sub $outdir/wmcbfterm -div $outdir/temp_pgm $outdir/gmcbf_init
-	    fslmaths $outdir/gmcbf_init -mul $wmcbfratio $outdir/wmcbf_init
-	    # load these into the MVN, GM cbf is always param 1
-	    #$fabber --output=$outdir/nextstep --model=$model $allinstruct $vbinstruct $extras -@ $options --params
-	    $mvntool --input=$outdir/temp --output=$outdir/temp --mask=$mask --param=ftiss --param-list=$outdir/step$stepfrom/paramnames.txt --write --valim=$outdir/gmcbf_init --var=0.1
-	    $mvntool --input=$outdir/temp --output=$outdir/temp --mask=$mask --param=fwm --param-list=$outdir/step$stepfrom/paramnames.txt --write --valim=$outdir/wmcbf_init --var=0.1
-	fi
-        
-	call_fabber --continue-from-mvn=$outdir/temp
-	echo $text > $outdir/step$step/info.txt
+        do_step
     fi
 fi 
 
 ### --- FAST OPTION ---
 if [ ! -z $fast ]; then
 #in fast mode do the one call to fabber here
-    echo "Fast mode: "$text
-    call_fabber
-    echo "Fast mode: "$text > $outdir/step$step/info.txt
+   do_step
 fi
 
 if [ -z $devel ]; then
