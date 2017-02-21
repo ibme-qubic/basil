@@ -212,7 +212,7 @@ case $fastlvl in
     # sensibel to use more iterations for a single step analysis
 	nbiter=10;
 	nbtrials=5;
-	fast=1
+	fast=1 #do it all in one step
 	;;
     *) 
 	echo "ERROR: $faslvl is not a valid option for --fast."
