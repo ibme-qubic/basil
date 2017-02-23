@@ -86,6 +86,8 @@ if [ -z $1 ]; then
     exit 1
 fi
 
+echo "THIS IS AN UNRELEASED DEVELOPMENT VERSION OF BASIL - USE AT OWN RISK"
+ 
 until [ -z $1 ]; do
     
     # look at this option and determine if has an argument specified by an =
@@ -156,8 +158,10 @@ done
 
 
 # version of software to use
-fabber=${FSLDIR}/bin/fabber
-mvntool=${FSLDIR}/bin/mvntool
+fabber=`dirname $0`/bin/fabber_asl
+mvntool=`dirname $0`/bin/mvntool
+#fabber=${FSLDIR}/bin/fabber
+#mvntool=${FSLDIR}/bin/mvntool
 
 #if [ ! -z $devel ]; then
     # in development mode use local version of fabber
