@@ -14,6 +14,10 @@
 
 #   SHCOPYRIGHT
 
+# Make script use local copies of helper scripts/programs in the same
+# directory, if present. This allows for multiple versions of the scripts
+# to be used, possibly with bundled dependencies
+PATH=`dirname $0`:${FSLDIR}/bin:${PATH}
 
 if [ -z $1 ]; then
     echo "Variance calculator for BASIL"
@@ -25,8 +29,7 @@ if [ -z $1 ]; then
     break
 else
 
-#fabber_var=~/cproject/fabber/fabber_var
-fabber_var=${FSLDIR}/bin/fabber_var
+fabber_var=fabber_var
 
 until [ -z $1 ]; do
     case $1 in
