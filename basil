@@ -8,6 +8,10 @@
 #
 # SHCOPYRIGHT
 
+# Make script use local copies of helper scripts/programs in the same
+# directory, if present. This allows for multiple versions of the scripts
+# to be used, possibly with bundled dependencies
+PATH=`dirname $0`:${FSLDIR}/bin:${PATH}
 
 Usage() {
     echo "Bayesian Inference for Arterial Spin Labelling MRI"
@@ -53,10 +57,10 @@ call_fabber() {
     $fabber --data=$infile --mask=$mask --output=$outdir/step$step --model=$model $allinstruct $vbinstruct $extras -@ $options $1
     if [ $step -gt 1 ]; then
 	if [ ! -z $devel ]; then #save a copy of the init MVN in the step
-	    ${FSLDIR}/bin/imcp $outdir/temp $outdir/step$step/initMVN 
+	    imcp $outdir/temp $outdir/step$step/initMVN 
 	fi
     fi
-    ${FSLDIR}/bin/imcp $outdir/step$step/finalMVN $outdir/temp
+    imcp $outdir/step$step/finalMVN $outdir/temp
 
 }
 
@@ -86,6 +90,8 @@ if [ -z $1 ]; then
     exit 1
 fi
 
+echo "THIS IS AN UNRELEASED DEVELOPMENT VERSION OF BASIL - USE AT OWN RISK"
+ 
 until [ -z $1 ]; do
     
     # look at this option and determine if has an argument specified by an =
@@ -154,10 +160,9 @@ until [ -z $1 ]; do
     shift
 done
 
-
 # version of software to use
-fabber=${FSLDIR}/bin/fabber
-mvntool=${FSLDIR}/bin/mvntool
+fabber=fabber_asl
+mvntool=mvntool
 
 #if [ ! -z $devel ]; then
     # in development mode use local version of fabber
@@ -324,7 +329,7 @@ if [ ! -z $initmvn ]; then
     # we are being supplied with an initial MVN
     stepfrom=0 # this will indicate that we have something to start from (i.e. step1 will be initialised by 'step 0')
     echo "Initial MVN being loaded $initmvn" >> $outdir/logfile
-    ${FSLDIR}/bin/imcp $initmvn $outdir/temp
+    imcp $initmvn $outdir/temp
 fi
     
 
@@ -442,14 +447,14 @@ if [ ! -z $pvcorr ]; then
 	# set the inital GM amd WM values using a simple PV correction
 	wmcbfratio=0.4
 	# modified pvgm map
-	${FSLDIR}/bin/fslmaths $pgm -sub 0.2 -thr 0 -add 0.2 $outdir/temp_pgm
+	fslmaths $pgm -sub 0.2 -thr 0 -add 0.2 $outdir/temp_pgm
 	# first part of correction psuedo WM CBF term
 	# extract the initial ftiss image
 	$mvntool --input=$outdir/temp --output=$outdir/temp_ftiss --mask=$mask --param=ftiss --param-list=$outdir/step$stepfrom/paramnames.txt --val
-	${FSLDIR}/bin/fslmaths $outdir/temp_ftiss -mul $wmcbfratio -mul $pwm $outdir/wmcbfterm
+	fslmaths $outdir/temp_ftiss -mul $wmcbfratio -mul $pwm $outdir/wmcbfterm
 	# the rest
-	${FSLDIR}/bin/fslmaths $outdir/temp_ftiss -sub $outdir/wmcbfterm -div $outdir/temp_pgm $outdir/gmcbf_init
-	${FSLDIR}/bin/fslmaths $outdir/gmcbf_init -mul $wmcbfratio $outdir/wmcbf_init
+	fslmaths $outdir/temp_ftiss -sub $outdir/wmcbfterm -div $outdir/temp_pgm $outdir/gmcbf_init
+	fslmaths $outdir/gmcbf_init -mul $wmcbfratio $outdir/wmcbf_init
 	# load these into the MVN, GM cbf is always param 1
 	$mvntool --input=$outdir/temp --output=$outdir/temp --mask=$mask --param=ftiss --param-list=$outdir/step$stepfrom/paramnames.txt --write --valim=$outdir/gmcbf_init --var=0.1
 	$mvntool --input=$outdir/temp --output=$outdir/temp --mask=$mask --param=fwm --param-list=$outdir/step$stepfrom/paramnames.txt --write --valim=$outdir/wmcbf_init --var=0.1
@@ -475,7 +480,7 @@ if [ ! -z $fast ]; then
 fi
 
 if [ -z $devel ]; then
-${FSLDIR}/bin/imrm $outdir/temp
+imrm $outdir/temp
 fi
 
 echo "End."
