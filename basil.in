@@ -15,7 +15,7 @@ PATH=`dirname $0`:${FSLDIR}/bin:${PATH}
 
 Usage() {
     echo "Bayesian Inference for Arterial Spin Labelling MRI"
-    echo "Version (build `cat $FSLDIR/etc/fslversion | sed 's/\.//g'`)"
+    echo "Version (build '${GIT_SHA1}' '${GIT_DATE}')"
     echo ""
     echo "Usage (optional parameters in {}):"
     echo " -i         : specify input/data file"
@@ -46,7 +46,7 @@ Usage() {
 }
 
 Version() {
-echo "$Id:$"
+echo "'${GIT_SHA1}' '${GIT_DATE}'"
 exit 0
 }
 
@@ -90,8 +90,6 @@ if [ -z $1 ]; then
     exit 1
 fi
 
-echo "THIS IS AN UNRELEASED DEVELOPMENT VERSION OF BASIL - USE AT OWN RISK"
- 
 until [ -z $1 ]; do
     
     # look at this option and determine if has an argument specified by an =
