@@ -39,7 +39,7 @@ until [ -z $1 ]; do
      esac
     shift
 done
-echo "BASIL variance calcualtor '${GIT_SHA1}' '${GIT_DATE}'"
+echo "BASIL variance calcualtor '@GIT_SHA1@' '@GIT_DATE@'"
 echo "Working in $datdir"
 
 steps=`ls -d $datdir/step[0-9]`
