@@ -2,7 +2,7 @@ include ${FSLCONFDIR}/default.mk
 
 PROJNAME = basil
 
-SCRIPTS = basil
+SCRIPTS = basil basil_var
 
 # Pass Git revision details
 GIT_SHA1:=$(shell git describe --dirty)
