@@ -21,7 +21,7 @@ Usage() {
     echo " -i         : specify input/data file"
     echo " {-o}       : specify output directory"
     echo " -m         : specify brain mask file"
-    echo " -@         : specify parameter options file"
+    echo " --optfile  : specify parameter options file"
     echo " "
     echo " Extended options:"
     echo " --infertau : Infer bolus duration"
@@ -112,7 +112,9 @@ until [ -z $1 ]; do
 	    takeargs=1;;
 	-m) mask=$argument
 	    takeargs=1;;
-	-@) options=$argument #options file (text)
+	-@) options=$argument #options file DEPRECATED
+	    takeargs=1;;
+	--optfile) options=$argument #options file POSIX-compliant replacement for -@
 	    takeargs=1;;
 	--fixbat) fixbat=1;;
 	--inferart) inferart=1;;
