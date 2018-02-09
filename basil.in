@@ -199,7 +199,7 @@ if [ -z $fastlvl ]; then
 fi
 fast=""
 
-spnbiter=10;
+spnbiter=20;
 case $fastlvl in
     0)
     # normal mode - permit plenty of iterations and trials
