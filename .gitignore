@@ -3,3 +3,6 @@ CVS
 *~
 .DS_Store
 depend.mk
+basil
+basil_var
+
