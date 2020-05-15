@@ -38,6 +38,7 @@ Usage() {
     echo ""
     echo " Special options:"
     echo " --t1im   : voxelwise T1 (tissue) estimates"
+    echo " --batim  : voxelwise BAT (ATT) estimates (seconds)"
     echo "  Partial volume correction / CBF estimation"
     echo "           (enforces --spatial)"
     echo " --pgm    : Gray matter PV map"
@@ -133,6 +134,8 @@ until [ -z $1 ]; do
 	--pwm) pvcorr=1 pwm=$argument
 	    takeargs=1;;
 	--t1im) t1im=$argument
+	    takeargs=1;;
+	--batim) batim=$argument
 	    takeargs=1;;
 	--disp) disp=$argument
 	    takeargs=1;;
@@ -343,6 +346,18 @@ fi
     if [ ! -z $t1im ]; then
     # use image prior for T1t - NB this should work even for normal VB (but also sets it up as a spatial prior for the spatial VB mode if used)
 	extras=$extras" --PSP_byname${spriors}=T_1 --PSP_byname${spriors}_type=I --PSP_byname${spriors}_image=$t1im"
+	spriors=`expr $spriors + 1`
+    fi
+#fi
+
+#BAT image
+    if [ ! -z $batim ]; then
+    if [ ! -z $fixbat ]; then
+      # Must include BAT in the model to use an image prior so --fixbat treats image as ground truth
+      allinstruct=$allinstruct" --incbat"
+    fi
+    # use image prior for delttiss - NB this should work even for normal VB (but also sets it up as a spatial prior for the spatial VB mode if used)
+	extras=$extras" --PSP_byname${spriors}=delttiss --PSP_byname${spriors}_type=I --PSP_byname${spriors}_image=$batim"
 	spriors=`expr $spriors + 1`
     fi
 #fi
