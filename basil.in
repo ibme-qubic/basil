@@ -368,7 +368,6 @@ if [ ! -z $infertiss ]; then
     allinstruct=$allinstruct" --infertiss"
     text="STEP $step: VB - $paramtext"
     if [ -z $fast ]; then
-	echo "here"
 	do_step
     fi
     # setup spatial priors ready
