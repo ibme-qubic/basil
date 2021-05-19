@@ -343,12 +343,17 @@ if [ -z $fixbat ]; then
 fi
 
 #T1 image
-    if [ ! -z $t1im ]; then
+if [ ! -z $t1im ]; then
     # use image prior for T1t - NB this should work even for normal VB (but also sets it up as a spatial prior for the spatial VB mode if used)
-	extras=$extras" --PSP_byname${spriors}=T_1 --PSP_byname${spriors}_type=I --PSP_byname${spriors}_image=$t1im"
-	spriors=`expr $spriors + 1`
+    extras=$extras" --PSP_byname${spriors}=T_1 --PSP_byname${spriors}_type=I --PSP_byname${spriors}_image=$t1im"
+
+    # If T1 was not set to be inferred, we need to include it in the model. Without --infert1 the model will automatically make
+    # the image prior 'ground truth' using a high precision
+    if [ -z $infert1 ]; then
+        extras=$extras" --inct1"
     fi
-#fi
+    spriors=`expr $spriors + 1`
+fi
 
 #BAT image
     if [ ! -z $batim ]; then
